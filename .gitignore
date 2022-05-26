@@ -10,3 +10,6 @@ artifacts
 coverage
 
 .npmignore
+.gitignore
+
+需求文档.md
