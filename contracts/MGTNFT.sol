@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "hardhat/console.sol";
 
 contract MGTNFT is ERC721, Ownable {
     using Strings for uint256;
@@ -28,7 +29,9 @@ contract MGTNFT is ERC721, Ownable {
     // reveal
     string private baseURI;
     string private blindBoxURI;
-    uint256 public revealedID;
+    string private contractURI_;
+    uint256[] public stageID;
+    mapping(uint256 => string) revealedBaseURI;
 
     constructor(
         string memory _name,
@@ -57,7 +60,7 @@ contract MGTNFT is ERC721, Ownable {
     function withdraw() public {
         require(msg.sender == copyright || msg.sender == project);
         require(address(this).balance != 0);
-        uint256 projects = (address(this).balance * 60) / 100;
+        uint256 projects = address(this).balance / 2;
         payable(copyright).transfer(address(this).balance - projects);
         payable(project).transfer(projects);
     }
@@ -72,6 +75,7 @@ contract MGTNFT is ERC721, Ownable {
         uint64 amount,
         uint64 _amountPerUser
     ) public onlyOwner {
+        require(_slot != 0, "_slot can not be zero");
         slot = _slot;
         startTime = _startTime;
         endTime = _endTime;
@@ -103,23 +107,20 @@ contract MGTNFT is ERC721, Ownable {
 
     /* --------------- reveal --------------- */
 
-    function setRevealedID(uint256 _revealedID) public onlyOwner {
+    /* function setRevealedID(uint256 _revealedID) public onlyOwner {
         revealedID = _revealedID;
         emit BlindBoxOpen(0);
-    }
+    } */
 
     function setBaseTokenURI(string memory _uri) public onlyOwner {
         baseURI = _uri;
     }
 
-    function setBlindBoxURI(string memory _blindBoxURI)
-        public
-        onlyOwner
-    {
+    function setBlindBoxURI(string memory _blindBoxURI) public onlyOwner {
         blindBoxURI = _blindBoxURI;
     }
 
-    function tokenURI(uint256 tokenId)
+    /* function tokenURI(uint256 tokenId)
         public
         view
         override
@@ -135,10 +136,77 @@ contract MGTNFT is ERC721, Ownable {
             bytes(baseURI_).length > 0 && tokenId <= revealedID
                 ? string(abi.encodePacked(baseURI_, tokenId.toString()))
                 : blindBoxURI;
+    } */
+
+    function setURI(uint256 id, string memory baseURI_) public onlyOwner {
+        require(
+            stageID.length != 0 && stageID[stageID.length - 1] < id,
+            "id should be self-incrementing"
+        );
+        stageID.push(id);
+        revealedBaseURI[id] = baseURI_;
+    }
+
+    /* function changeURI(uint256 id, string memory baseURI_)  public onlyOwner {
+        require(revealedBaseURI[id] != "","URI corresponding to id should not be empty");
+        revealedBaseURI[id] = baseURI_;
+    } */
+
+    // 二分查找 实现分阶段开盲盒，也就是找到tokenID对应的URI
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        string memory baseURI_;
+        uint256 len = stageID.length;
+        require(len != 0);
+
+        uint256 left;
+        uint256 right = len - 1;
+
+        for (; left <= right; ) {
+            uint256 midIndex = (left + right) / 2;
+            if (midIndex == 0) {
+                if (tokenId <= stageID[0]) {
+                    baseURI_ = revealedBaseURI[stageID[0]];
+                    break;
+                } else if (len == 1) {
+                    return blindBoxURI;
+                } else {
+                    baseURI_ = revealedBaseURI[stageID[1]];
+                    break;
+                }
+            }
+
+            if (tokenId <= stageID[midIndex]) {
+                if (tokenId > stageID[midIndex - 1]) {
+                    baseURI_ = revealedBaseURI[stageID[midIndex]];
+                }
+                right = midIndex - 1;
+            } else {
+                left = midIndex;
+            }
+        }
+
+        // 如果最终baseURI是0，那么意味着tokenID比所有元素都大
+        return
+            bytes(baseURI_).length > 0
+                ? string(abi.encodePacked(baseURI_, tokenId.toString()))
+                : blindBoxURI;
     }
 
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
+    }
+
+    function contractURI() public view returns (string memory) {
+        return contractURI_;
+    }
+
+    function setContractURI(string memory uri_) public onlyOwner {
+        contractURI_ = uri_;
     }
 
     function _beforeTokenTransfer(
