@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "hardhat/console.sol";
 
 contract MGTNFT is ERC721, Ownable {
     using Strings for uint256;
@@ -28,10 +27,10 @@ contract MGTNFT is ERC721, Ownable {
 
     // reveal
     string private baseURI;
-    string private blindBoxURI;
+    string public blindBoxBaseURI;
     string private contractURI_;
-    uint256[] public stageID;
-    mapping(uint256 => string) revealedBaseURI;
+    uint256[] public stageIDs;
+    mapping(uint256 => string) public revealedBaseURI;
 
     constructor(
         string memory _name,
@@ -107,52 +106,30 @@ contract MGTNFT is ERC721, Ownable {
 
     /* --------------- reveal --------------- */
 
-    /* function setRevealedID(uint256 _revealedID) public onlyOwner {
-        revealedID = _revealedID;
-        emit BlindBoxOpen(0);
-    } */
-
-    function setBaseTokenURI(string memory _uri) public onlyOwner {
-        baseURI = _uri;
+    function setBlindBoxURI(string memory _blindBoxBaseURI) public onlyOwner {
+        blindBoxBaseURI = _blindBoxBaseURI;
     }
 
-    function setBlindBoxURI(string memory _blindBoxURI) public onlyOwner {
-        blindBoxURI = _blindBoxURI;
-    }
-
-    /* function tokenURI(uint256 tokenId)
-        public
-        view
-        override
-        returns (string memory)
-    {
-        require(
-            _exists(tokenId),
-            "ERC721Metadata: URI query for nonexistent token"
-        );
-
-        string memory baseURI_ = _baseURI();
-        return
-            bytes(baseURI_).length > 0 && tokenId <= revealedID
-                ? string(abi.encodePacked(baseURI_, tokenId.toString()))
-                : blindBoxURI;
-    } */
-
-    function setURI(uint256 id, string memory baseURI_) public onlyOwner {
-        require(
-            stageID.length != 0 && stageID[stageID.length - 1] < id,
-            "id should be self-incrementing"
-        );
-        stageID.push(id);
+    function setBaseURI(uint256 id, string memory baseURI_) public onlyOwner {
+        if (stageIDs.length != 0) {
+            require(
+                stageIDs[stageIDs.length - 1] < id,
+                "id should be self-incrementing"
+            );
+        }
+        stageIDs.push(id);
         revealedBaseURI[id] = baseURI_;
     }
 
-    /* function changeURI(uint256 id, string memory baseURI_)  public onlyOwner {
-        require(revealedBaseURI[id] != "","URI corresponding to id should not be empty");
+    function changeURI(uint256 id, string memory baseURI_) public onlyOwner {
+        require(
+            bytes(revealedBaseURI[id]).length != 0,
+            "URI corresponding to id should not be empty"
+        );
         revealedBaseURI[id] = baseURI_;
-    } */
+    }
 
-    // 二分查找 实现分阶段开盲盒，也就是找到tokenID对应的URI
+    // binary search
     function tokenURI(uint256 tokenId)
         public
         view
@@ -160,45 +137,51 @@ contract MGTNFT is ERC721, Ownable {
         returns (string memory)
     {
         string memory baseURI_;
-        uint256 len = stageID.length;
+        uint256 len = stageIDs.length;
         require(len != 0);
 
         uint256 left;
         uint256 right = len - 1;
 
+        // (x,y]
         for (; left <= right; ) {
             uint256 midIndex = (left + right) / 2;
             if (midIndex == 0) {
-                if (tokenId <= stageID[0]) {
-                    baseURI_ = revealedBaseURI[stageID[0]];
+                if (tokenId <= stageIDs[0]) {
+                    baseURI_ = revealedBaseURI[stageIDs[0]];
                     break;
                 } else if (len == 1) {
-                    return blindBoxURI;
+                    return
+                        string(
+                            abi.encodePacked(
+                                blindBoxBaseURI,
+                                tokenId.toString()
+                            )
+                        );
                 } else {
-                    baseURI_ = revealedBaseURI[stageID[1]];
+                    baseURI_ = revealedBaseURI[stageIDs[1]];
                     break;
                 }
             }
 
-            if (tokenId <= stageID[midIndex]) {
-                if (tokenId > stageID[midIndex - 1]) {
-                    baseURI_ = revealedBaseURI[stageID[midIndex]];
+            if (tokenId <= stageIDs[midIndex]) {
+                if (tokenId > stageIDs[midIndex - 1]) {
+                    baseURI_ = revealedBaseURI[stageIDs[midIndex]];
+                    break;
                 }
                 right = midIndex - 1;
             } else {
                 left = midIndex;
+                if (midIndex == right -1) {
+                    left = right;
+                }
             }
         }
 
-        // 如果最终baseURI是0，那么意味着tokenID比所有元素都大
         return
             bytes(baseURI_).length > 0
                 ? string(abi.encodePacked(baseURI_, tokenId.toString()))
-                : blindBoxURI;
-    }
-
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
+                : string(abi.encodePacked(blindBoxBaseURI, tokenId.toString()));
     }
 
     function contractURI() public view returns (string memory) {
