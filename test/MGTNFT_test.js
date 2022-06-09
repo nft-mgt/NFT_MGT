@@ -1,6 +1,5 @@
-const { expect } = require("chai");
-const { ethers } = require("hardhat");
-const { currentTime, toUnit, fastForward } = require('./utils')();
+const hre = require("hardhat");
+const { currentTime, getEthBalance, fastForward } = require('./utils')();
 const { assert } = require('./common');
 
 describe("GameLoot", async function () {
@@ -174,5 +173,31 @@ describe("GameLoot", async function () {
         await mgt_nft.connect(owner).setCopyright(copyrightAddress);
 
         assert.equal(await mgt_nft.copyright(), copyrightAddress);
+    })
+
+	/* ------------ withdraw ------------ */
+
+	it('withdraw test', async () => {
+		// mint
+		const slot = 1;
+		const startTime = await currentTime();
+		const endTime = startTime + 2 * DAY;
+		const price = 1;
+		const amount = 100;
+		const amountPerUser = 5;
+
+		await mgt_nft.openSale(slot, startTime, endTime, price, amount, amountPerUser);
+		await mgt_nft.setWhitelists([wl1.address],slot);
+		// normal mint
+		await fastForward(DAY);
+		await mgt_nft.connect(wl1).mint(amountPerUser,{value:price * amountPerUser})
+
+        assert.equal(await getEthBalance(mgt_nft.address), price * amountPerUser);
+
+		//	wrong caller
+        await assert.revert(mgt_nft.connect(wl1).withdraw(), "have no rights do this");
+
+		await mgt_nft.connect(project).withdraw()
+		await mgt_nft.connect(copyright).withdraw()
     })
 })

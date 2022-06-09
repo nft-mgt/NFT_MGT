@@ -18,7 +18,7 @@ contract MGTNFT is ERC721, Ownable {
     uint64 public startTime;
     uint64 public endTime = type(uint64).max;
     uint64 public slot = type(uint8).max;
-    uint64 amountPerUser;
+    uint64 public amountPerUser;
     uint256 public price;
 
     uint64 public immutable maxSupply = 1800;
@@ -57,8 +57,7 @@ contract MGTNFT is ERC721, Ownable {
     }
 
     function withdraw() public {
-        require(msg.sender == copyright || msg.sender == project);
-        require(address(this).balance != 0);
+        require(msg.sender == copyright || msg.sender == project,"have no rights do this");
         uint256 projects = address(this).balance / 2;
         payable(copyright).transfer(address(this).balance - projects);
         payable(project).transfer(projects);
