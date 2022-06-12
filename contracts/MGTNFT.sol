@@ -57,7 +57,10 @@ contract MGTNFT is ERC721, Ownable {
     }
 
     function withdraw() public {
-        require(msg.sender == copyright || msg.sender == project,"have no rights do this");
+        require(
+            msg.sender == copyright || msg.sender == project,
+            "have no rights do this"
+        );
         uint256 projects = address(this).balance / 2;
         payable(copyright).transfer(address(this).balance - projects);
         payable(project).transfer(projects);
@@ -137,42 +140,48 @@ contract MGTNFT is ERC721, Ownable {
     {
         string memory baseURI_;
         uint256 len = stageIDs.length;
-        require(len != 0);
+        if (len == 0) {
+            baseURI_ = blindBoxBaseURI;
+        } else {
+            uint256 left;
+            uint256 right = len - 1;
 
-        uint256 left;
-        uint256 right = len - 1;
+            // (x,y]
+            for (; left <= right; ) {
+                uint256 midIndex = (left + right) / 2;
+                if (midIndex == 0) {
+                    if (tokenId <= stageIDs[0]) {
+                        baseURI_ = revealedBaseURI[stageIDs[0]];
+                        break;
+                    } else if (len == 1) {
+                        baseURI_ = blindBoxBaseURI;
+                        break;
+                    } else {
+                        if (tokenId <= stageIDs[1]) {
+                            baseURI_ = revealedBaseURI[stageIDs[1]];
+                            break;
+                        } else {
+                            baseURI_ = blindBoxBaseURI;
+                            break;
+                        }
+                    }
+                }
 
-        // (x,y]
-        for (; left <= right; ) {
-            uint256 midIndex = (left + right) / 2;
-            if (midIndex == 0) {
-                if (tokenId <= stageIDs[0]) {
-                    baseURI_ = revealedBaseURI[stageIDs[0]];
-                    break;
-                } else if (len == 1) {
-                    return
-                        string(
-                            abi.encodePacked(
-                                blindBoxBaseURI,
-                                tokenId.toString()
-                            )
-                        );
+                if (tokenId <= stageIDs[midIndex]) {
+                    if (tokenId > stageIDs[midIndex - 1]) {
+                        baseURI_ = revealedBaseURI[stageIDs[midIndex]];
+                        break;
+                    }
+                    right = midIndex - 1;
                 } else {
-                    baseURI_ = revealedBaseURI[stageIDs[1]];
-                    break;
-                }
-            }
-
-            if (tokenId <= stageIDs[midIndex]) {
-                if (tokenId > stageIDs[midIndex - 1]) {
-                    baseURI_ = revealedBaseURI[stageIDs[midIndex]];
-                    break;
-                }
-                right = midIndex - 1;
-            } else {
-                left = midIndex;
-                if (midIndex == right -1) {
-                    left = right;
+                    left = midIndex;
+                    if (midIndex == right - 1) {
+                        if (tokenId > stageIDs[right]) {
+                            baseURI_ = blindBoxBaseURI;
+                            break;
+                        }
+                        left = right;
+                    }
                 }
             }
         }
