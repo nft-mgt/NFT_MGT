@@ -2,7 +2,7 @@ const hre = require("hardhat");
 const { currentTime, getEthBalance, fastForward } = require('./utils')();
 const { assert } = require('./common');
 
-describe("GameLoot", async function () {
+describe("MGTNFT", async function () {
 	let mgt_nft;
 
 	let owner, copyright, project, wl1, wl2, user;
