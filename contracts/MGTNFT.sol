@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract MGTNFT is ERC721, Ownable {
     using Strings for uint256;
@@ -43,8 +42,6 @@ contract MGTNFT is ERC721, Ownable {
     }
 
     event BlindBoxOpen(uint256 tokenId);
-
-    receive() external payable {}
 
     /* --------------- ETH receiver --------------- */
 
@@ -93,6 +90,7 @@ contract MGTNFT is ERC721, Ownable {
 
     function mint(uint64 amount) external payable callerIsUser {
         require(whitelist[msg.sender] == slot, "Can not mint");
+        require(totalSupply + amount <= saleAmount, "Sold out");
         require(
             block.timestamp <= endTime && block.timestamp >= startTime,
             "Wrong time"
@@ -121,6 +119,7 @@ contract MGTNFT is ERC721, Ownable {
         }
         stageIDs.push(id);
         revealedBaseURI[id] = baseURI_;
+        emit BlindBoxOpen(id);
     }
 
     function changeURI(uint256 id, string memory baseURI_) public onlyOwner {
