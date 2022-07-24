@@ -1,3 +1,8 @@
+// We require the Hardhat Runtime Environment explicitly here. This is optional
+// but useful for running the script in a standalone fashion through `node <script>`.
+//
+// When running the script with `npx hardhat run <script>` you'll find the Hardhat
+// Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 
 async function main() {
@@ -10,7 +15,7 @@ async function main() {
 
   // We get the contract to deploy
   const MGTNFT = await hre.ethers.getContractFactory("MGTNFT");
-  const mgt = await hre.upgrades.deployProxy(MGTNFT,["JAPAN ADULT TOKEN - Minario","JAV","0xBCcC2073ADfC46421308f62cfD9868dF00D339a8","0xBCcC2073ADfC46421308f62cfD9868dF00D339a8"]);
+  const mgt = await MGTNFT.deploy("JAPAN ADULT TOKEN - Minario","JAV","0xBCcC2073ADfC46421308f62cfD9868dF00D339a8","0xBCcC2073ADfC46421308f62cfD9868dF00D339a8");
 
   await mgt.deployed();
 

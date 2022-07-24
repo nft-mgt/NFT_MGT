@@ -2,6 +2,7 @@
 node_modules
 .env
 .DS_Store
+.openzeppelin
 
 #Hardhat files
 cache
@@ -12,5 +13,7 @@ coverage
 .npmignore
 .gitignore
 
-需求文档.md
-交接文档.md
+draft.md
+
+contracts/MGTNFT_Test.sol
+scripts/deploy_Test*

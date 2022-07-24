@@ -9,12 +9,10 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  const MGTNFT = await hre.ethers.getContractFactory("MGTNFT");
-  const mgt = await hre.upgrades.deployProxy(MGTNFT,["JAPAN ADULT TOKEN - Minario","JAV","0xBCcC2073ADfC46421308f62cfD9868dF00D339a8","0xBCcC2073ADfC46421308f62cfD9868dF00D339a8"]);
-
-  await mgt.deployed();
-
-  console.log("MGTNFT deployed to:", mgt.address);
+  const addr = "0xfDE830Fa58EdC01ED9b864BCeF2100fC9Ff2d744";
+  const MGTNFT = await ethers.getContractFactory("MGTNFT");
+  const mgt_nft = await upgrades.upgradeProxy(addr, MGTNFT);
+  console.log("MGTNFT upgrade to:",mgt_nft.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
