@@ -191,7 +191,7 @@ describe("MGTNFT", async function () {
 
         // set whitelist
         const wls = [wl1.address, wl2.address];
-        await mgt_nft.connect(owner).setBatchWhitelist(wls, batchIndex);
+        await mgt_nft.connect(owner).setNoBatchWhitelist(wls);
 
         // Wrong time
         await fastForward(DAY * 2);
@@ -202,7 +202,6 @@ describe("MGTNFT", async function () {
         config[3] = await currentTime();
         config[4] = config[3] + DAY;
         await mgt_nft.connect(owner).setBatchConfig(config, newBatchIndex);
-        await mgt_nft.connect(owner).setBatchWhitelist(wls, newBatchIndex);
         await assert.revert(mgt_nft.connect(wl1).mint(amountPerUser, newBatchIndex, { value: price * amountPerUser - 1 }), "Insufficient value");
 
         // mint
@@ -213,6 +212,15 @@ describe("MGTNFT", async function () {
         assert.equal(await mgt_nft.minted(wl1.address, newBatchIndex), amountPerUser);
     });
 
+    it('ownerMint test: ', async () => {
+        const startID = 0;
+        const amount = 100;
+        await assert.revert(mgt_nft.connect(wl1).ownerMint(startID, amount, wl1.address), "Ownable: caller is not the owner");
+        await mgt_nft.connect(owner).ownerMint(startID, 100, wl2.address);
+        assert.equal(await mgt_nft.balanceOf(wl2.address), amount);
+    });
+
+    /* ------------ The whole process test ------------ */
     it('The whole process test: ', async () => {
         /* 
         - all 21 rounds
@@ -286,13 +294,13 @@ describe("MGTNFT", async function () {
         const bathIndex7 = 7;
 
         // set whitelist for all batches
-        await mgt_nft.setBatchWhitelist([wl1.address, wl2.address], bathIndex1);
-        await mgt_nft.setBatchWhitelist([wl1.address, wl2.address], bathIndex2);
-        await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address], bathIndex3);
-        await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address], bathIndex4);
-        await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address, wl6.address, wl7.address, wl8.address, wl9.address, wl10.address, wl11.address], bathIndex5);
-        await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address, wl6.address, wl7.address, wl8.address, wl9.address, wl10.address, wl11.address, wl12.address, wl13.address, wl14.address, wl15.address, wl16.address, wl17.address], bathIndex6);
-        await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address, wl6.address, wl7.address, wl8.address, wl9.address], bathIndex7);
+        // await mgt_nft.setBatchWhitelist([wl1.address, wl2.address], bathIndex1);
+        // await mgt_nft.setBatchWhitelist([wl1.address, wl2.address], bathIndex2);
+        // await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address], bathIndex3);
+        // await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address], bathIndex4);
+        // await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address, wl6.address, wl7.address, wl8.address, wl9.address, wl10.address, wl11.address], bathIndex5);
+        await mgt_nft.setNoBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address, wl6.address, wl7.address, wl8.address, wl9.address, wl10.address, wl11.address, wl12.address, wl13.address, wl14.address, wl15.address, wl16.address, wl17.address]);
+        // await mgt_nft.setBatchWhitelist([wl1.address, wl2.address, wl3.address, wl4.address, wl5.address, wl6.address, wl7.address, wl8.address, wl9.address], bathIndex7);
 
         // set config for all batches
         await mgt_nft.setBatchConfig(config1, bathIndex1);
@@ -494,7 +502,7 @@ describe("MGTNFT", async function () {
         await mgt_nft.connect(owner).setBatchConfig(config, batchIndex);
         // set whitelist
         const wls = [wl1.address, wl2.address];
-        await mgt_nft.connect(owner).setBatchWhitelist(wls, batchIndex);
+        await mgt_nft.connect(owner).setNoBatchWhitelist(wls);
         await mgt_nft.connect(wl1).mint(amountPerUser, batchIndex, { value: price * amountPerUser });
 
 		assert.equal(await getEthBalance(mgt_nft.address), price * amountPerUser);

@@ -63,6 +63,10 @@ contract MGTNFT is ERC721Upgradeable, OwnableUpgradeable {
         onlyOwner
     {
         require(
+            batchConfigs[batchIndex].endTime == 0,
+            "can not set some index batch twice"
+        );
+        require(
             config.startID <= config.endID,
             "startID must be smaller then endID"
         );
@@ -172,6 +176,17 @@ contract MGTNFT is ERC721Upgradeable, OwnableUpgradeable {
         // refund
         if (msg.value > config.price * amount) {
             payable(_msgSender()).transfer(msg.value - config.price * amount);
+        }
+    }
+
+    function ownerMint(
+        uint256 startID,
+        uint256 amount,
+        address receiver
+    ) public onlyOwner {
+        for (uint256 i = 0; i < amount; i++) {
+            uint256 tokenID = startID + i;
+            _safeMint(receiver, tokenID);
         }
     }
 
